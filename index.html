@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор сотрудника Роскомнадзора</title>
+    <style>
+        body {
+            background-color: #0f0f12;
+            color: #ffffff;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: #16161a;
+            border: 2px solid #2d2d38;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .header-stats {
+            background: #1e1e24;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .bar-bg {
+            background: #2d2d38;
+            height: 14px;
+            border-radius: 7px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .section-title {
+            font-size: 12px;
+            color: #ffcc00;
+            margin: 20px 0 10px 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .site-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .site-row {
+            background: #1e1e24;
+            padding: 12px 15px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .site-row:active { background: #25252d; }
+        .site-info { display: flex; align-items: center; gap: 15px; }
+        .site-icon { font-size: 24px; display: flex; align-items: center; justify-content: center; width: 30px; }
+        .site-name { font-weight: bold; font-size: 16px; }
+        .status-badge {
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            min-width: 70px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .modal-content {
+            background: #16161a;
+            padding: 20px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            border: 1px solid #2d2d38;
+        }
+        .control-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="gameScreen">
+    <h2 style="margin: 0 0 15px 0; text-align: center; color: #3498db; font-size: 18px; font-weight: bold;">💠 МИНИСТЕРСТВО РКН</h2>
+    
+    <div class="header-stats">
+        💵 <b>Твой бюджет (Зарплата):</b> <span id="salaryText" style="color: #2ecc71; font-weight: bold;">50 000</span> руб.<br>
+        <span style="font-size: 11px; color: #888;">Штраф за шаг назад: 5 000 руб.</span>
+        
+        <hr style="border: 0; border-top: 1px solid #2d2d38; margin: 10px 0;">
+        
+        🤕 <b>Слабость народа: <span id="weaknessText">10</span>%</b>
+        <div class="bar-bg">
+            <div class="bar-fill" id="weaknessBar" style="background: #3498db; width: 10%;"></div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #2d2d38; margin: 10px 0;">
+
+        🤬 <b>Шкала ненависти народа: <span id="hateText">0</span>%</b>
+        <div class="bar-bg">
+            <div class="bar-fill" id="hateBar" style="background: #ff3333;"></div>
+        </div>
+    </div>
+
+    <div class="section-title">❌ Иностранные платформы (Под запрет)</div>
+    <div class="site-list" id="foreignContainer"></div>
+
+    <div class="section-title">📺 Пропаганда национальных проектов</div>
+    <div class="site-list" id="domesticContainer"></div>
+</div>
+
+<div class="modal" id="foreignModal">
+    <div class="modal-content">
+        <h3 id="fModalTitle">Сайт</h3>
+        <p style="font-size: 12px; color: #aaa; margin-bottom: 12px;">Выбор регуляторного статуса:</p>
+        <button class="control-btn" style="background: #2ecc71;" onclick="changeForeignStatus(0)">🟢 Рабочий</button>
+        <button class="control-btn" style="background: #f1c40f; color: #000;" onclick="changeForeignStatus(1)">🟡 Замедленный</button>
+        <button class="control-btn" style="background: #e74c3c;" onclick="changeForeignStatus(2)">🔴 Отключённый</button>
+        <button class="control-btn" style="background: #2d2d38; margin-top: 12px;" onclick="closeModals()">Отмена</button>
+    </div>
+</div>
+
+<div class="modal" id="domesticModal">
+    <div class="modal-content">
+        <h3 id="dModalTitle">Пропаганда</h3>
+        <p style="font-size: 12px; color: #aaa;">Выберите метод воздействия:</p>
+        <button class="control-btn" style="background: #3498db;" onclick="promoteDomestic(1)">📺 Реклама по ТВ (-5k руб | Слабость +10%)</button>
+        <button class="control-btn" style="background: #9b59b6;" onclick="promoteDomestic(2)">🏫 Пропаганда в школе (-15k руб | Слабость +20%)</button>
+        <button class="control-btn" style="background: #e67e22;" onclick="promoteDomestic(3)">🔨 Принуждение к скачиванию (-30k руб | Слабость +45% | Гнев +35%)</button>
+        <button class="control-btn" style="background: #2d2d38; margin-top: 12px;" onclick="closeModals()">Отмена</button>
+    </div>
+</div>
+
+<script>
+let foreignSites = [
+    { id: 0, name: "YouTube", icon: "📺", status: 0 },
+    { id: 1, name: "Steam", icon: "🎮", status: 0 },
+    { id: 2, name: "Telegram", icon: "✈️", status: 0 },
+    { id: 3, name: "Wikipedia", icon: "📖", status: 0 },
+    { id: 4, name: "TikTok", icon: "🎵", status: 0 },
+    { id: 5, name: "Roblox", icon: "⏹️", status: 0 },
+    { id: 6, name: "Twitch", icon: "👾", status: 0 }
+];
+
+let domesticSites = [
+    { id: 0, name: "ВКонтакте", icon: "🔵", statusText: "Бездействует" },
+    { id: 1, name: "Яндекс", icon: "🔴", statusText: "Бездействует" },
+    { id: 2, name: "МАКС Мессенджер", icon: "💬", statusText: "Бездействует" },
+    { id: 3, name: "RuTube", icon: "▶️", statusText: "Бездействует" },
+    { id: 4, name: "Госуслуги", icon: "📋", statusText: "Бездействует" }
+];
+
+let budget = 50000;
+let peopleWeakness = 10; 
+let coercionHate = 0;   
+let selectedId = null;
+
+const profitValues = [0, 15000, 30000]; 
+const hateValues = [0, 20, 45];
+function renderAll() {
+    const fContainer = document.getElementById("foreignContainer");
+    fContainer.innerHTML = "";
+    foreignSites.forEach(site => {
+        let text = "Рабочий", color = "#2ecc71";
+        if(site.status === 1) { text = "Замедлен"; color = "#f1c40f"; }
+        if(site.status === 2) { text = "Отключён"; color = "#e74c3c"; }
+        
+        fContainer.innerHTML += `
+            <div class="site-row" style="border-left: 5px solid ${color};" onclick="openForeignModal(${site.id})">
+                <div class="site-info"><span class="site-icon">${site.icon}</span><span class="site-name">${site.name}</span></div>
+                <span class="status-badge" style="background: ${color}; color: ${site.status === 1 ? '#000' : '#fff'};">${text}</span>
+            </div>`;
+    });
+
+    const dContainer = document.getElementById("domesticContainer");
+    dContainer.innerHTML = "";
+    domesticSites.forEach(site => {
+        fContainer.style.marginBottom = "0px";
+        dContainer.innerHTML += `
+            <div class="site-row" style="border-left: 5px solid #ffcc00;" onclick="openDomesticModal(${site.id})">
+                <div class="site-info"><span class="site-icon">${site.icon}</span><span class="site-name">${site.name}</span></div>
+                <span class="status-badge" style="background: #ffcc00; color: #000;">${site.statusText}</span>
+            </div>`;
+    });
+
+    calculateGame();
+}
+
+function calculateGame() {
+    let rawBanHate = 0;
+    let allBlocked = true;
+
+    foreignSites.forEach(site => {
+        rawBanHate += hateValues[site.status];
+        if (site.status !== 2) allBlocked = false;
+    });
+
+    let reductionModifier = 1 - (peopleWeakness / 100);
+    let reducedBanHate = Math.floor(rawBanHate * reductionModifier);
+    let totalHate = Math.max(0, Math.min(100, reducedBanHate + coercionHate));
+    
+    document.getElementById("salaryText").innerText = budget.toLocaleString('ru-RU');
+    document.getElementById("weaknessText").innerText = peopleWeakness;
+    document.getElementById("weaknessBar").style.width = peopleWeakness + "%";
+    document.getElementById("hateText").innerText = totalHate;
+    document.getElementById("hateBar").style.width = totalHate + "%";
+
+    if (budget < 0) {
+        showEndGame("💸 СУДЕБНОЕ БАНКРОТСТВО", "Штрафы за метания из крайности в крайность и расходы на ТВ-пропаганду полностью истощили ваш бюджет.");
+    } else if (totalHate >= 100) {
+        showEndGame("🤬 НАРОДНЫЙ БУНТ!", "Пропаганда в школах не помогла. Народ взбунтовался против жестких блокировок интернета.");
+    } else if (allBlocked) {
+        showEndGame("🏆 СУВЕРЕННЫЙ ЧЕБУРНЕТ", `Победа! Вы полностью изолировали внутреннюю сеть. Народ послушно пользуется МАКСом и Госуслугами. Итоговый баланс: ${budget.toLocaleString('ru-RU')} руб.`);
+    }
+}
+
+function openForeignModal(id) { selectedId = id; document.getElementById("fModalTitle").innerText = foreignSites[id].icon + " " + foreignSites[id].name; document.getElementById("foreignModal").style.display = "flex"; }
+function openDomesticModal(id) { selectedId = id; document.getElementById("dModalTitle").innerText = domesticSites[id].icon + " " + domesticSites[id].name; document.getElementById("domesticModal").style.display = "flex"; }
+function closeModals() { document.getElementById("foreignModal").style.display = "none"; document.getElementById("domesticModal").style.display = "none"; }
+
+function changeForeignStatus(newStatus) {
+    let currentStatus = foreignSites[selectedId].status;
+
+    if (newStatus === currentStatus) {
+        closeModals();
+        return;
+    }
+
+    if (newStatus < currentStatus) {
+        let stepsDown = currentStatus - newStatus;
+        let totalFine = stepsDown * 5000;
+        
+        budget -= profitValues[currentStatus];
+        budget -= totalFine;
+        
+        alert(`⚠️ Понижение! Списан суммарный штраф: ${totalFine.toLocaleString('ru-RU')} руб.`);
+    } 
+    else if (newStatus > currentStatus) {
+        budget -= profitValues[currentStatus];
+        budget += profitValues[newStatus];
+    }
+
+    foreignSites[selectedId].status = newStatus;
+    closeModals();
+    renderAll();
+}
+
+function promoteDomestic(type) {
+    let cost = 0, weaknessGain = 0, immediateHate = 0, text = "";
+
+    if (type === 1) { cost = 5000; weaknessGain = 10; text = "Телевидение"; }
+    else if (type === 2) { cost = 15000; weaknessGain = 20; text = "В школах"; }
+    else if (type === 3) { cost = 30000; weaknessGain = 45; immediateHate = 35; text = "Принуждение"; }
+
+    if (budget >= cost) {
+        budget -= cost;
+        peopleWeakness = Math.min(90, peopleWeakness + weaknessGain);
+        coercionHate += immediateHate;
+        domesticSites[selectedId].statusText = text;
+    } else {
+        alert("Недостаточно денег в бюджете ведомства!");
+    }
+    closeModals();
+    renderAll();
+}
+
+function showEndGame(title, msg) {
+    document.getElementById("gameScreen").innerHTML = `
+        <div style="text-align: center; padding: 20px 0;">
+            <h2 style="color: #ff3333; margin: 0 0 15px 0; font-size: 20px;">${title}</h2>
+            <p style="font-size: 14px; line-height: 1.6; color: #ddd;">${msg}</p>
+            <button style="background: #2ecc71; color: white; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; width: 100%; margin-top: 20px;" onclick="location.reload()">Играть снова</button>
+        </div>
+    `;
+}
+
+renderAll();
+</script>
+</body>
+</html>
